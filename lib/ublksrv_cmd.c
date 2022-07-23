@@ -317,3 +317,29 @@ void ublksrv_ctrl_dump(struct ublksrv_ctrl_dev *dev)
 		}
 	}
 }
+
+int ublksrv_ctrl_set_para(struct ublksrv_ctrl_dev *dev,
+		const struct ublk_para_header *para)
+{
+	struct ublksrv_ctrl_cmd_data data = {
+		.cmd_op	= UBLK_CMD_SET_PARA,
+		.flags	= CTRL_CMD_HAS_BUF,
+		.addr = (__u64)para,
+		.len = para->len,
+	};
+
+	return __ublksrv_ctrl_cmd(dev, &data);
+}
+
+int ublksrv_ctrl_get_para(struct ublksrv_ctrl_dev *dev,
+		struct ublk_para_header *para)
+{
+	struct ublksrv_ctrl_cmd_data data = {
+		.cmd_op	= UBLK_CMD_GET_PARA,
+		.flags	= CTRL_CMD_HAS_BUF,
+		.addr = (__u64)para,
+		.len = para->len,
+	};
+
+	return __ublksrv_ctrl_cmd(dev, &data);
+}

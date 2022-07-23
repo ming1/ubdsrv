@@ -145,9 +145,38 @@ static void *demo_event_io_handler_fn(void *data)
 	return NULL;
 }
 
-static unsigned long long demo_get_dev_blocks(const struct ublksrv_dev *dev)
+static void demo_event_set_parameters(struct ublksrv_ctrl_dev *cdev,
+		const struct ublksrv_dev *dev)
 {
-	return dev->tgt.dev_size / dev->ctrl_dev->dev_info.block_size;
+	struct ublksrv_ctrl_dev_info *info = &cdev->dev_info;
+	struct ublk_basic_para p = {
+		.header = {
+			.type = UBLK_PARA_TYPE_BASIC,
+			.len = sizeof(p),
+		},
+		.logical_bs_shift	= cdev->bs_shift,
+		.physical_bs_shift	= 12,
+		.max_sectors		= info->rq_max_blocks <<
+			(cdev->bs_shift - 9),
+		.dev_sectors		= dev->tgt.dev_size >> 9,
+	};
+	struct ublk_discard_para p1 = {
+		.header = {
+			.type = UBLK_PARA_TYPE_DISCARD,
+			.len = sizeof(p1),
+		},
+	};
+	int ret;
+
+	ret = ublksrv_ctrl_set_para(cdev, &p.header);
+	if (ret)
+		fprintf(stderr, "dev %d set basic parameter failed %d\n",
+				info->dev_id, ret);
+
+	ret = ublksrv_ctrl_set_para(cdev, &p1.header);
+	if (ret)
+		fprintf(stderr, "dev %d set discard parameter failed %d\n",
+				info->dev_id, ret);
 }
 
 static void demo_event_io_handler(struct ublksrv_ctrl_dev *ctrl_dev)
@@ -182,8 +211,10 @@ static void demo_event_io_handler(struct ublksrv_ctrl_dev *ctrl_dev)
 				&info_array[i]);
 	}
 
+	demo_event_set_parameters(ctrl_dev, dev);
+
 	/* everything is fine now, start us */
-	ublksrv_ctrl_start_dev(ctrl_dev, getpid(), demo_get_dev_blocks(dev));
+	ublksrv_ctrl_start_dev(ctrl_dev, getpid(), 0);
 
 	ublksrv_ctrl_get_info(ctrl_dev);
 	ublksrv_ctrl_dump(ctrl_dev);

@@ -296,13 +296,27 @@ static const char *ublksrv_dev_state_desc(struct ublksrv_ctrl_dev *dev)
 void ublksrv_ctrl_dump(struct ublksrv_ctrl_dev *dev)
 {
 	struct ublksrv_ctrl_dev_info *info = &dev->dev_info;
+	struct ublk_basic_para p = {
+		.header = {
+			.type = UBLK_PARA_TYPE_BASIC,
+			.len = sizeof(p),
+		},
+	};
+	int ret = ublksrv_ctrl_get_para(dev, &p.header);
+	unsigned bs = 1 << p.logical_bs_shift;
+	unsigned size = p.dev_sectors;
+
+	if (ret) {
+		fprintf(stderr, "can't get basic parameter ret %d\n", ret);
+		return;
+	}
 
 	printf("dev id %d: nr_hw_queues %d queue_depth %d block size %d dev_capacity %lld\n",
 			info->dev_id,
                         info->nr_hw_queues, info->queue_depth,
-                        info->block_size, info->dev_blocks);
+                        bs, size);
 	printf("\tmax rq size %d daemon pid %d flags 0x%llx state %s\n",
-                        info->block_size * info->rq_max_blocks,
+                        p.max_sectors << 9,
 			info->ublksrv_pid, info->flags,
 			ublksrv_dev_state_desc(dev));
 

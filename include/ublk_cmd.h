@@ -15,6 +15,8 @@
 #define	UBLK_CMD_DEL_DEV		0x05
 #define	UBLK_CMD_START_DEV	0x06
 #define	UBLK_CMD_STOP_DEV	0x07
+#define	UBLK_CMD_SET_PARA	0x08
+#define	UBLK_CMD_GET_PARA	0x09
 
 /*
  * IO commands, issued by ublk server, and handled by ublk driver.
@@ -163,6 +165,49 @@ struct ublksrv_io_cmd {
 	 * FETCH* command only
 	 */
 	__u64	addr;
+};
+
+/* ublk device parameter definition */
+enum {
+	UBLK_PARA_TYPE_BASIC,
+	UBLK_PARA_TYPE_DISCARD,
+	UBLK_PARA_TYPE_LAST,
+};
+
+struct ublk_para_header {
+	__u16 type;
+	__u16 len;
+} __attribute__ ((__packed__));
+
+struct ublk_basic_para {
+	struct ublk_para_header  header;
+	__u32   logical_bs_shift:6;
+	__u32   physical_bs_shift:6;
+	__u32	io_opt_shift:6;
+	__u32	io_min_shift:6;
+	__u32	rotational:1;
+	__u32	write_back_cache:1;
+	__u32	fua:1;
+	__u32	read_only:1;
+	__u32	unused:4;
+
+	__u32	max_sectors;
+	__u32	chunk_sectors;
+
+	__u64   dev_sectors;
+	__u64   virt_boundary_mask;
+};
+
+struct ublk_discard_para {
+	struct ublk_para_header  header;
+	__u32	discard_alignment;
+
+	__u32	discard_granularity;
+	__u32	max_discard_sectors;
+
+	__u32	max_write_zeroes_sectors;
+	__u16	max_discard_segments;
+	__u16	reserved0;
 };
 
 #endif
